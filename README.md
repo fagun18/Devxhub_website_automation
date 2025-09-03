@@ -97,7 +97,7 @@ npm run test:headed
 
 ### GitHub Actions
 
-Add these secrets to your GitHub repository:
+Add these secrets to your GitHub repository: 
 
 1. Go to **Settings** → **Secrets and variables** → **Actions**
 2. Add the following repository secrets:
