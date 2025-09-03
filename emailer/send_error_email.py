@@ -20,10 +20,13 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
         print('SMTP credentials are not set; skipping email send.')
         return
 
+    # Parse multiple email addresses (comma-separated)
+    email_recipients = [email.strip() for email in email_to.split(',') if email.strip()]
+
     msg = EmailMessage()
     msg['Subject'] = subject
     msg['From'] = email_from
-    msg['To'] = email_to
+    msg['To'] = ', '.join(email_recipients)  # Join multiple recipients
     msg.set_content(message)
 
     # Attach files if provided
@@ -38,11 +41,19 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
                 print('Failed to attach', file_path, e)
 
     context = ssl.create_default_context()
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
-        server.starttls(context=context)
-        server.login(smtp_user, smtp_pass)
-        server.send_message(msg)
-        print('Error email sent to', email_to)
+    
+    # Use SSL for port 465, TLS for other ports
+    if smtp_port == 465:
+        with smtplib.SMTP_SSL(smtp_host, smtp_port, context=context) as server:
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+            print(f'Email sent to {len(email_recipients)} recipients:', ', '.join(email_recipients))
+    else:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls(context=context)
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+            print(f'Email sent to {len(email_recipients)} recipients:', ', '.join(email_recipients))
 
 
 def main():
