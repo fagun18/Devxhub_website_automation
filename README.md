@@ -93,6 +93,21 @@ npm run test:report
 npm run test:headed
 ```
 
+## 📧 Email Configuration
+
+### GitHub Actions
+
+Add these secrets to your GitHub repository:
+
+1. Go to **Settings** → **Secrets and variables** → **Actions**
+2. Add the following repository secrets:
+   - `SMTP_HOST`: Your SMTP server (e.g., smtp.gmail.com)
+   - `SMTP_PORT`: SMTP port (e.g., 587)
+   - `SMTP_USER`: Your email username
+   - `SMTP_PASS`: Your email app password
+   - `EMAIL_FROM`: Sender email address
+   - `EMAIL_TO`: Recipient email address
+
 ## 📊 Test Data
 
 The automation uses the following test data:
@@ -112,7 +127,8 @@ The project includes an automated workflow (`.github/workflows/hourly.yml`) that
 2. **Installs dependencies** (Node.js, Python, Playwright)
 3. **Executes tests** with enhanced reporting
 4. **Generates HTML reports** and zips them
-5. **Uploads artifacts** for download
+5. **Sends email notifications** with attachments
+6. **Uploads artifacts** for download
 
 ### Manual Trigger
 You can also trigger the workflow manually:
@@ -132,10 +148,12 @@ The automation detects bugs when:
 
 ### Success Indicators
 - ✅ **Green Status**: API returns 200
+- 📧 **Success Email**: "Devxhub contact automation: OK"
 - 📊 **Passed Test**: All assertions pass
 
 ### Failure Indicators
 - ❌ **Red Status**: API returns 500/other errors
+- 🚨 **Bug Email**: "BUG: Devxhub contact form not working"
 - 📊 **Failed Test**: Assertions fail with error details
 
 ## 🔧 Configuration
