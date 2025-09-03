@@ -1,0 +1,79 @@
+name: Devxhub Contact Automation
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests with enhanced reporting
+        run: npm run test:report
+
+      - name: Generate HTML report artifact
+        if: always()
+        run: |
+          npx playwright show-report --report-dir=playwright-report --host=127.0.0.1 --port=9323 &
+          sleep 5
+          zip -r playwright-report.zip playwright-report || true
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            playwright-report.zip
+            artifacts/status.json
+          if-no-files-found: ignore
+
+      - name: Email report via Python
+        if: always()
+        run: |
+          SUBJECT_OK="Devxhub contact automation: OK"
+          SUBJECT_BUG="BUG: Devxhub contact form not working"
+          BODY_OK="Automation ran successfully. See attached HTML report."
+          BODY_BUG="BUG detected in contact form submission. See attached HTML report and status.json."
+          STATUS_FILE="artifacts/status.json"
+          SUBJECT="$SUBJECT_OK"
+          BODY="$BODY_OK"
+          if [ -f "$STATUS_FILE" ]; then
+            STATUS_CODE=$(jq -r '.status // empty' "$STATUS_FILE" || echo "")
+            OK=$(jq -r '.ok // false' "$STATUS_FILE" || echo "false")
+            if [ "$OK" != "true" ]; then
+              SUBJECT="$SUBJECT_BUG (status ${STATUS_CODE})"
+              BODY="$BODY_BUG"
+            fi
+          fi
+          python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" --attach playwright-report.zip --attach artifacts/status.json || true
+
+
