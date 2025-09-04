@@ -6,35 +6,44 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from email.utils import formataddr, formatdate, make_msgid
+from email.utils import formataddr, formatdate, make_msgid, getaddresses
 from typing import List
 import re
 
 
-def sanitize_and_validate_emails(raw_emails: str) -> List[str]:
-    candidates = []
-    for part in re.split(r'[;,]', raw_emails or ''):
-        addr = (part or '').strip()
+def dedupe_preserve_order(items: List[str]) -> List[str]:
+    seen = set()
+    out: List[str] = []
+    for it in items:
+        key = it.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(it)
+    return out
+
+
+def parse_emails(raw_emails: str) -> List[str]:
+    parsed = getaddresses([raw_emails or ""])  # returns list of (name, email)
+    emails: List[str] = []
+    for _name, addr in parsed:
+        addr = (addr or '').strip()
         if not addr:
             continue
-        # Remove surrounding angle brackets and quotes
-        addr = addr.strip().strip('<>').strip().strip('"').strip("'")
-        # Collapse internal spaces
-        addr = re.sub(r"\s+", "", addr)
-        # Simple RFC5321-safe pattern
-        if re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', addr):
-            candidates.append(addr)
+        # Clean up common wrappers
+        addr = addr.strip('<>').strip('"').strip("'")
+        # Remove surrounding whitespace
+        addr = addr.strip()
+        # Basic sanity: must contain single '@' and a dot in domain
+        if '@' in addr:
+            local, _, domain = addr.partition('@')
+            if local and domain and '.' in domain:
+                emails.append(addr)
+            else:
+                print(f"Skipping invalid email address (structure): [masked]")
         else:
-            print(f"Skipping invalid email address: {addr}")
-    # De-duplicate preserving order
-    seen = set()
-    valid = []
-    for a in candidates:
-        if a.lower() in seen:
-            continue
-        seen.add(a.lower())
-        valid.append(a)
-    return valid
+            print(f"Skipping invalid email address (no @): [masked]")
+    return dedupe_preserve_order(emails)
 
 
 def send_email(subject: str, message: str, attachments: List[str] | None = None) -> None:
@@ -51,18 +60,17 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
         print('SMTP credentials are not set; skipping email send.')
         return
 
-    # Sanitize and validate recipients
-    email_recipients = sanitize_and_validate_emails(email_to)
+    # Parse recipients robustly
+    email_recipients = parse_emails(email_to)
 
-    print(f"Raw EMAIL_TO: {email_to}")
-    print(f'Attempting to send email to: {", ".join(email_recipients) if email_recipients else "<none>"}')
+    print(f'Parsed {len(email_recipients)} recipient(s) from EMAIL_TO')
     print(f'Using SMTP server: {smtp_host}:{smtp_port}')
     print(f'From: {email_from}')
     print(f'Subject: {subject}')
     print(f'Message length: {len(message)} characters')
 
     if not email_recipients:
-        print('No valid recipient emails after validation; aborting send.')
+        print('No valid recipient emails after parsing; aborting send.')
         return
 
     # Create message container with proper encoding
@@ -118,7 +126,7 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
                 server.login(smtp_user, smtp_pass)
                 print('Login successful, sending email...')
                 server.sendmail(envelope_from, envelope_to, raw_message)
-                print(f'✅ Email sent successfully to {len(email_recipients)} recipients: {", ".join(email_recipients)}')
+                print(f'✅ Email sent successfully to {len(email_recipients)} recipient(s).')
         else:
             print('Using TLS connection (port 587)')
             with smtplib.SMTP(smtp_host, smtp_port) as server:
@@ -128,7 +136,7 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
                 server.login(smtp_user, smtp_pass)
                 print('Login successful, sending email...')
                 server.sendmail(envelope_from, envelope_to, raw_message)
-                print(f'✅ Email sent successfully to {len(email_recipients)} recipients: {", ".join(email_recipients)}')
+                print(f'✅ Email sent successfully to {len(email_recipients)} recipient(s).')
 
     except smtplib.SMTPAuthenticationError as e:
         print(f'❌ SMTP Authentication Error: {e}')
