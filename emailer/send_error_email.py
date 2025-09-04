@@ -6,7 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-from email.utils import formataddr
+from email.utils import formataddr, formatdate, make_msgid
 from typing import List
 
 
@@ -39,8 +39,8 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
     msg['From'] = formataddr(('Devxhub Automation', email_from))
     msg['To'] = ', '.join(email_recipients)
     msg['Subject'] = subject
-    msg['Date'] = smtplib.formatdate(localtime=True)
-    msg['Message-ID'] = smtplib.make_msgid()
+    msg['Date'] = formatdate(localtime=True)
+    msg['Message-ID'] = make_msgid()
 
     # Add body to email - ensure clean text
     clean_message = message.strip()
