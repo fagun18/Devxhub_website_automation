@@ -83,8 +83,8 @@ jobs:
           echo "Starting email notification..."
           SUBJECT_OK="Devxhub Automation TESTING Report by Testing Team"
           SUBJECT_BUG="BUG: Devxhub Automation TESTING Report by Testing Team"
-          BODY_OK="Automation ran successfully. Detailed summary and enhanced report attached."
-          BODY_BUG="BUG detected in contact form submission. See detailed summary and enhanced report."
+          BODY_OK="Automation ran successfully. Detailed summary and full reports attached."
+          BODY_BUG="BUG detected in contact form submission. See detailed summary and full reports."
           STATUS_FILE="artifacts/status.json"
           SUBJECT="$SUBJECT_OK"
           BODY="$BODY_OK"
@@ -113,17 +113,15 @@ jobs:
           echo "Final Subject: $SUBJECT"
           echo "Final Body: $BODY"
           
-          # Prepare single attachment: enhanced-report.html
+          # Prepare attachments: enhanced and full report
           ATTACH_ARGS=""
           if [ -f "playwright-report/enhanced-report.html" ]; then
             ATTACH_ARGS="$ATTACH_ARGS --attach playwright-report/enhanced-report.html"
             echo "Will attach: playwright-report/enhanced-report.html"
-          else
-            echo "enhanced-report.html not found; attempting to attach index.html"
-            if [ -f "playwright-report/index.html" ]; then
-              ATTACH_ARGS="$ATTACH_ARGS --attach playwright-report/index.html"
-              echo "Will attach: playwright-report/index.html"
-            fi
+          fi
+          if [ -f "playwright-report/index.html" ]; then
+            ATTACH_ARGS="$ATTACH_ARGS --attach playwright-report/index.html"
+            echo "Will attach: playwright-report/index.html"
           fi
           
           echo "Running email command..."

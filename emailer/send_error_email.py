@@ -65,16 +65,37 @@ def build_email_bodies(subject: str, message: str, status: dict) -> tuple[str, s
     now_iso = datetime.now(timezone.utc).astimezone().isoformat(timespec='seconds')
     result_text = 'SUCCESS' if ok else 'BUG'
 
+    # Static test execution metadata (aligns with the current journey)
+    website_url = 'https://devxhub.com/contact-us'
+    api_endpoint = 'https://devxhub.com/api/posts/contacts'
+    api_method = 'POST'
+    test_data = {
+        'Name': 'Mejbaur Bahar Fagun',
+        'Phone': '+8801316314566',
+        'Email': 'fagun.devxhub@gmail.com',
+        'Message': 'Automation Testing purpose'
+    }
+
     plain = (
         f"Devxhub Automation TESTING Report by Testing Team\n"
         f"Result: {result_text}\n"
         f"HTTP Status: {http_status}\n"
         f"Time: {now_iso}\n\n"
-        f"{message}\n\n"
+        f"Summary: {message}\n\n"
+        f"Test Execution Details\n"
+        f"- Website: {website_url}\n"
+        f"- API Endpoint: {api_endpoint}\n"
+        f"- Method: {api_method}\n"
+        f"- Status Code: {http_status}\n"
+        f"- Test Data:\n"
+        f"    Name: {test_data['Name']}\n"
+        f"    Phone: {test_data['Phone']}\n"
+        f"    Email: {test_data['Email']}\n"
+        f"    Message: {test_data['Message']}\n\n"
         f"API Response Body:\n{api_body}\n"
     )
 
-    # Mobile-friendly, single title line, fluid layout, wrapped code block
+    # Mobile-friendly, single title line, fluid layout, wrapped code block + full details
     html = f"""
     <html>
       <body style=\"margin:0; padding:0; background:#0b1020;\">
@@ -101,10 +122,19 @@ def build_email_bodies(subject: str, message: str, status: dict) -> tuple[str, s
 
               <p style=\"margin:0 0 12px 0; color:#d1d5db; font-size:14px; line-height:1.5;\">{message}</p>
 
+              <h3 style=\"margin:16px 0 8px 0; color:#a78bfa; font-size:14px;\">Test Execution Details</h3>
+              <div style=\"background:#111827; border:1px solid #374151; border-radius:10px; padding:12px;\">
+                <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">Website</div><div style=\"color:#e5e7eb; font-size:13px;\">{website_url}</div></div>
+                <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">API Endpoint</div><div style=\"color:#e5e7eb; font-size:13px;\">{api_endpoint}</div></div>
+                <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">Method</div><div style=\"color:#e5e7eb; font-size:13px;\">{api_method}</div></div>
+                <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">Status Code</div><div style=\"color:#e5e7eb; font-size:13px;\">{http_status}</div></div>
+                <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">Test Data</div><div style=\"color:#e5e7eb; font-size:13px;\">Name: {test_data['Name']} • Phone: {test_data['Phone']} • Email: {test_data['Email']} • Message: {test_data['Message']}</div></div>
+              </div>
+
               <h3 style=\"margin:16px 0 8px 0; color:#a78bfa; font-size:14px;\">API Response</h3>
               <div style=\"background:#0b1020; color:#e2e8f0; padding:12px; border-radius:10px; border:1px solid #1f2937; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:12px; line-height:1.5; white-space:pre-wrap; word-break:break-word; overflow:auto; max-width:100%;\">{api_body}</div>
 
-              <p style=\"margin-top:14px; font-size:12px; color:#9ca3af;\">Attachment: enhanced-report.html</p>
+              <p style=\"margin-top:14px; font-size:12px; color:#9ca3af;\">Attachments: enhanced-report.html and full HTML report.</p>
             </div>
           </div>
         </div>
