@@ -16,7 +16,8 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
     smtp_user = os.getenv('SMTP_USER')
     smtp_pass = os.getenv('SMTP_PASS')
 
-    email_from = os.getenv('EMAIL_FROM', smtp_user or '')
+    # Use the authenticated user as the visible From for maximum Gmail compatibility
+    email_from = os.getenv('EMAIL_FROM', smtp_user or '') or smtp_user or ''
     email_to = os.getenv('EMAIL_TO', 'fagun115946@gmail.com')
 
     if not smtp_user or not smtp_pass:
@@ -33,9 +34,9 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
     print(f'Message length: {len(message)} characters')
 
     # Create message container with proper encoding
-    msg = MIMEMultipart('alternative')
-    
-    # Set headers with proper formatting
+    msg = MIMEMultipart('mixed')
+
+    # Set headers with proper formatting (From must be the authenticated user)
     msg['From'] = formataddr(('Devxhub Automation', email_from))
     msg['To'] = ', '.join(email_recipients)
     msg['Subject'] = subject
@@ -54,14 +55,14 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
                 with open(file_path, 'rb') as f:
                     data = f.read()
                 filename = os.path.basename(file_path)
-                
+
                 # Create attachment with proper headers
                 part = MIMEBase('application', 'octet-stream')
                 part.set_payload(data)
                 encoders.encode_base64(part)
                 part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
-                part.add_header('Content-Type', 'application/octet-stream; name="{filename}"')
-                
+                part.add_header('Content-Type', f'application/octet-stream; name="{filename}"')
+
                 msg.attach(part)
                 print(f'Attached file: {filename} ({len(data)} bytes)')
             except Exception as e:
@@ -69,9 +70,14 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
 
     try:
         context = ssl.create_default_context()
-        
+
         print(f'Connecting to {smtp_host}:{smtp_port}...')
-        
+
+        # Prepare envelope sender/recipients explicitly to avoid header parsing issues
+        envelope_from = smtp_user
+        envelope_to = email_recipients
+        raw_message = msg.as_string()
+
         # Use SSL for port 465, TLS for other ports
         if smtp_port == 465:
             print('Using SSL connection (port 465)')
@@ -79,7 +85,7 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
                 print('Connected via SSL, attempting login...')
                 server.login(smtp_user, smtp_pass)
                 print('Login successful, sending email...')
-                server.send_message(msg)
+                server.sendmail(envelope_from, envelope_to, raw_message)
                 print(f'✅ Email sent successfully to {len(email_recipients)} recipients: {", ".join(email_recipients)}')
         else:
             print('Using TLS connection (port 587)')
@@ -89,9 +95,9 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
                 print('TLS started, attempting login...')
                 server.login(smtp_user, smtp_pass)
                 print('Login successful, sending email...')
-                server.send_message(msg)
+                server.sendmail(envelope_from, envelope_to, raw_message)
                 print(f'✅ Email sent successfully to {len(email_recipients)} recipients: {", ".join(email_recipients)}')
-                
+
     except smtplib.SMTPAuthenticationError as e:
         print(f'❌ SMTP Authentication Error: {e}')
         print('Please check your Gmail App Password. Make sure:')
@@ -114,7 +120,7 @@ def main():
     parser.add_argument('--attach', action='append', default=[])
     parser.add_argument('--no-attachments', action='store_true', help='Send email without attachments for testing')
     args = parser.parse_args()
-    
+
     # If no-attachments flag is set, send without attachments
     attachments = [] if args.no_attachments else args.attach
     send_email(args.subject, args.message, attachments)
