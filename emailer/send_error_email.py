@@ -65,6 +65,15 @@ def build_email_bodies(subject: str, message: str, status: dict) -> tuple[str, s
     now_iso = datetime.now(timezone.utc).astimezone().isoformat(timespec='seconds')
     result_text = 'SUCCESS' if ok else 'BUG'
 
+    # Color for HTTP status (2xx green, 5xx red, else amber)
+    status_str = str(http_status)
+    if status_str.startswith('2'):
+        status_color = '#22c55e'  # green
+    elif status_str.startswith('5'):
+        status_color = '#f43f5e'  # red
+    else:
+        status_color = '#f59e0b'  # amber
+
     # Static test execution metadata (aligns with the current journey)
     website_url = 'https://devxhub.com/contact-us'
     api_endpoint = 'https://devxhub.com/api/posts/contacts'
@@ -112,7 +121,7 @@ def build_email_bodies(subject: str, message: str, status: dict) -> tuple[str, s
                 </div>
                 <div style=\"flex:1 1 140px; min-width:140px; background:#111827; padding:12px; border-radius:10px; text-align:center; border:1px solid #374151;\">
                   <div style=\"font-size:12px; color:#9ca3af;\">HTTP Status</div>
-                  <div style=\"font-weight:800; font-size:16px;\">{http_status}</div>
+                  <div style=\"font-weight:800; font-size:16px; color:{status_color};\">{http_status}</div>
                 </div>
                 <div style=\"flex:1 1 140px; min-width:140px; background:#111827; padding:12px; border-radius:10px; text-align:center; border:1px solid #374151;\">
                   <div style=\"font-size:12px; color:#9ca3af;\">Time</div>
@@ -127,7 +136,7 @@ def build_email_bodies(subject: str, message: str, status: dict) -> tuple[str, s
                 <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">Website</div><div style=\"color:#e5e7eb; font-size:13px;\">{website_url}</div></div>
                 <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">API Endpoint</div><div style=\"color:#e5e7eb; font-size:13px;\">{api_endpoint}</div></div>
                 <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">Method</div><div style=\"color:#e5e7eb; font-size:13px;\">{api_method}</div></div>
-                <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">Status Code</div><div style=\"color:#e5e7eb; font-size:13px;\">{http_status}</div></div>
+                <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">Status Code</div><div style=\"color:{status_color}; font-size:13px; font-weight:700;\">{http_status}</div></div>
                 <div style=\"display:flex; gap:8px; margin:6px 0; flex-wrap:wrap;\"><div style=\"min-width:110px; color:#9ca3af; font-size:12px;\">Test Data</div><div style=\"color:#e5e7eb; font-size:13px;\">Name: {test_data['Name']} • Phone: {test_data['Phone']} • Email: {test_data['Email']} • Message: {test_data['Message']}</div></div>
               </div>
 
