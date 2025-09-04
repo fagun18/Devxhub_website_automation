@@ -9,6 +9,8 @@ from email import encoders
 from email.utils import formataddr, formatdate, make_msgid, getaddresses
 from typing import List
 import re
+import json
+from datetime import datetime, timezone
 
 
 def dedupe_preserve_order(items: List[str]) -> List[str]:
@@ -46,6 +48,70 @@ def parse_emails(raw_emails: str) -> List[str]:
     return dedupe_preserve_order(emails)
 
 
+def read_status(status_path: str = 'artifacts/status.json') -> dict:
+    if os.path.exists(status_path):
+        try:
+            with open(status_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f'Failed to read {status_path}: {e}')
+    return {"ok": False, "status": "N/A", "body": "No status available"}
+
+
+def build_email_bodies(subject: str, message: str, status: dict) -> tuple[str, str]:
+    ok = status.get('ok')
+    http_status = status.get('status')
+    api_body = status.get('body')
+    now_iso = datetime.now(timezone.utc).astimezone().isoformat(timespec='seconds')
+    result_text = 'SUCCESS' if ok else 'BUG'
+
+    plain = (
+        f"Devxhub Contact Automation\n"
+        f"Result: {result_text}\n"
+        f"HTTP Status: {http_status}\n"
+        f"Time: {now_iso}\n\n"
+        f"{message}\n\n"
+        f"API Response Body:\n{api_body}\n"
+    )
+
+    html = f"""
+    <html>
+      <body style=\"font-family:Arial,Helvetica,sans-serif; background:#f8fafc; padding:16px;\">
+        <div style=\"max-width:720px; margin:auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden;\">
+          <div style=\"padding:16px 20px; background:#0f172a; color:#fff;\">
+            <h2 style=\"margin:0;\">Devxhub Contact Automation</h2>
+            <div style=\"opacity:0.85; font-size:13px;\">{subject}</div>
+          </div>
+          <div style=\"padding:20px;\">
+            <div style=\"display:flex; gap:12px; margin-bottom:16px;\">
+              <div style=\"flex:1; background:#f1f5f9; padding:12px; border-radius:8px; text-align:center;\">
+                <div style=\"font-size:12px; color:#475569;\">Result</div>
+                <div style=\"font-weight:700; color:{'#16a34a' if ok else '#dc2626'};\">{result_text}</div>
+              </div>
+              <div style=\"flex:1; background:#f1f5f9; padding:12px; border-radius:8px; text-align:center;\">
+                <div style=\"font-size:12px; color:#475569;\">HTTP Status</div>
+                <div style=\"font-weight:700;\">{http_status}</div>
+              </div>
+              <div style=\"flex:1; background:#f1f5f9; padding:12px; border-radius:8px; text-align:center;\">
+                <div style=\"font-size:12px; color:#475569;\">Time</div>
+                <div style=\"font-weight:700;\">{now_iso}</div>
+              </div>
+            </div>
+
+            <p style=\"margin:0 0 12px 0;\">{message}</p>
+
+            <h3 style=\"margin:20px 0 8px 0;\">API Response</h3>
+            <pre style=\"white-space:pre-wrap; background:#0b1020; color:#e2e8f0; padding:12px; border-radius:8px;\">{api_body}</pre>
+
+            <p style=\"margin-top:16px; font-size:13px; color:#475569;\">Attachments: HTML report zip and raw status.json.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+    """
+    return plain, html
+
+
 def send_email(subject: str, message: str, attachments: List[str] | None = None) -> None:
     smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
     smtp_port = int(os.getenv('SMTP_PORT', '587'))
@@ -73,7 +139,13 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
         print('No valid recipient emails after parsing; aborting send.')
         return
 
-    # Create message container with proper encoding
+    # Read status for body enrichment
+    status = read_status()
+
+    # Build bodies (plain + html)
+    plain_body, html_body = build_email_bodies(subject, message, status)
+
+    # Create outer mixed container
     msg = MIMEMultipart('mixed')
 
     # Set headers with proper formatting (From must be the authenticated user)
@@ -83,10 +155,11 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
     msg['Date'] = formatdate(localtime=True)
     msg['Message-ID'] = make_msgid()
 
-    # Add body to email - ensure clean text
-    clean_message = message.strip()
-    text_part = MIMEText(clean_message, 'plain', 'utf-8')
-    msg.attach(text_part)
+    # Create alternative part for plain+html
+    alt = MIMEMultipart('alternative')
+    alt.attach(MIMEText(plain_body, 'plain', 'utf-8'))
+    alt.attach(MIMEText(html_body, 'html', 'utf-8'))
+    msg.attach(alt)
 
     # Attach files if provided
     if attachments:
