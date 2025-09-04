@@ -6,6 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+from email.utils import formataddr
 from typing import List
 
 
@@ -31,15 +32,20 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
     print(f'Subject: {subject}')
     print(f'Message length: {len(message)} characters')
 
-    # Create message container
-    msg = MIMEMultipart()
-    msg['From'] = email_from
+    # Create message container with proper encoding
+    msg = MIMEMultipart('alternative')
+    
+    # Set headers with proper formatting
+    msg['From'] = formataddr(('Devxhub Automation', email_from))
     msg['To'] = ', '.join(email_recipients)
     msg['Subject'] = subject
+    msg['Date'] = smtplib.formatdate(localtime=True)
+    msg['Message-ID'] = smtplib.make_msgid()
 
     # Add body to email - ensure clean text
     clean_message = message.strip()
-    msg.attach(MIMEText(clean_message, 'plain', 'utf-8'))
+    text_part = MIMEText(clean_message, 'plain', 'utf-8')
+    msg.attach(text_part)
 
     # Attach files if provided
     if attachments:
@@ -49,11 +55,12 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
                     data = f.read()
                 filename = os.path.basename(file_path)
                 
-                # Create attachment
+                # Create attachment with proper headers
                 part = MIMEBase('application', 'octet-stream')
                 part.set_payload(data)
                 encoders.encode_base64(part)
                 part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+                part.add_header('Content-Type', 'application/octet-stream; name="{filename}"')
                 
                 msg.attach(part)
                 print(f'Attached file: {filename} ({len(data)} bytes)')
@@ -105,8 +112,12 @@ def main():
     parser.add_argument('--subject', required=True)
     parser.add_argument('--message', required=True)
     parser.add_argument('--attach', action='append', default=[])
+    parser.add_argument('--no-attachments', action='store_true', help='Send email without attachments for testing')
     args = parser.parse_args()
-    send_email(args.subject, args.message, args.attach)
+    
+    # If no-attachments flag is set, send without attachments
+    attachments = [] if args.no_attachments else args.attach
+    send_email(args.subject, args.message, attachments)
 
 
 if __name__ == '__main__':

@@ -125,8 +125,18 @@ jobs:
           fi
           
           echo "Running email command..."
-          python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" $ATTACH_ARGS || true
-          echo "Email command completed with exit code: $?"
+          # First try without attachments to test basic email functionality
+          python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" --no-attachments || true
+          echo "Email command (no attachments) completed with exit code: $?"
+          
+          # If that works, try with attachments
+          if [ $? -eq 0 ]; then
+            echo "Basic email worked, now trying with attachments..."
+            python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" $ATTACH_ARGS || true
+            echo "Email command (with attachments) completed with exit code: $?"
+          else
+            echo "Basic email failed, skipping attachment test"
+          fi
 
 
 
