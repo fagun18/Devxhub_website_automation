@@ -93,31 +93,6 @@ npm run test:report
 npm run test:headed
 ```
 
-## 📧 Email Configuration
-
-### GitHub Actions
-
-Add these secrets to your GitHub repository: 
-
-1. Go to **Settings** → **Secrets and variables** → **Actions**
-2. Add the following repository secrets:
-   - `SMTP_HOST`: `smtp.gmail.com`
-   - `SMTP_PORT`: `587`
-   - `SMTP_USER`: `fagun.devxhub@gmail.com`
-   - `SMTP_PASS`: `ibcs kfzt gpqd qwte` (Gmail App Password)
-   - `EMAIL_FROM`: `fagun.devxhub@gmail.com`
-   - `EMAIL_TO`: `hadis@devxhub.com,fagun115946@gmail.com`
-
-## 📊 Test Data
-
-The automation uses the following test data:
-
-| Field | Value |
-|-------|-------|
-| **Full Name** | Mejbaur Bahar Fagun |
-| **Phone** | +8801316314566 |
-| **Email** | fagun.devxhub@gmail.com |
-| **Message** | Automation Testing purpose |
 
 ## 🔄 GitHub Actions Workflow
 
@@ -156,19 +131,7 @@ The automation detects bugs when:
 - 🚨 **Bug Email**: "BUG: Devxhub contact form not working"
 - 📊 **Failed Test**: Assertions fail with error details
 
-## 🔧 Configuration
 
-### Playwright Config (`playwright.config.ts`)
-- **Timeout**: 120 seconds for tests
-- **Browser**: Chromium (headless by default)
-- **Viewport**: 1280x800
-- **Base URL**: https://devxhub.com
-
-### Test Config (`tests/devxhub.spec.ts`)
-- **Navigation**: Retry logic for reliability
-- **Form Fields**: XPath selectors for precise targeting
-- **API Monitoring**: Waits for POST response
-- **Error Handling**: Comprehensive try-catch blocks
 
 ## 🚨 Troubleshooting
 
@@ -207,58 +170,3 @@ start playwright-report/enhanced-report.html
 # Check status file
 cat artifacts/status.json
 ```
-
-## 📝 API Endpoints
-
-### Contact Form API
-- **URL**: `https://devxhub.com/api/posts/contacts`
-- **Method**: POST
-- **Expected Status**: 200
-- **Content-Type**: application/json
-
-### Response Format
-```json
-{
-  "error": false,
-  "message": "Success"
-}
-```
-
-### Error Response
-```json
-{
-  "error": true,
-  "url": "https://devxhub.com/api/posts/contacts",
-  "statusCode": 500,
-  "statusMessage": "Internal Server Error",
-  "message": "Server Error"
-}
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 📞 Support
-
-For issues and questions:
-- **Email**: fagun115946@gmail.com
-- **GitHub Issues**: Create an issue in the repository
-
-## 🎉 Acknowledgments
-
-- **Devxhub**: For providing the test website
-- **Playwright**: For excellent browser automation
-- **GitHub Actions**: For CI/CD capabilities
-
----
-
-**Made with ❤️ for Devxhub Contact Form Monitoring**
