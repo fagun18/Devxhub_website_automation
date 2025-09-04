@@ -46,8 +46,11 @@ jobs:
       - name: Generate HTML report
         if: always()
         run: |
-          npx playwright show-report --report-dir=playwright-report --host=127.0.0.1 --port=9323 &
-          sleep 5
+          # Generate the standard Playwright HTML report
+          npx playwright test --reporter=html || true
+          # Run the custom enhanced report generator
+          node reports/generate-enhanced-report.js || true
+          # Zip the reports for attachment
           zip -r playwright-report.zip playwright-report || true
 
       - name: Upload report artifact
@@ -123,7 +126,7 @@ jobs:
           
           echo "Running email command..."
           python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" $ATTACH_ARGS || true
-          echo "Email command completed"
+          echo "Email command completed with exit code: $?"
 
 
 

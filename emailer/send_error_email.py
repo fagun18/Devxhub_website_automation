@@ -2,7 +2,10 @@ import os
 import ssl
 import argparse
 import smtplib
-from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 from typing import List
 
 
@@ -25,12 +28,18 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
     print(f'Attempting to send email to: {", ".join(email_recipients)}')
     print(f'Using SMTP server: {smtp_host}:{smtp_port}')
     print(f'From: {email_from}')
+    print(f'Subject: {subject}')
+    print(f'Message length: {len(message)} characters')
 
-    msg = EmailMessage()
-    msg['Subject'] = subject
+    # Create message container
+    msg = MIMEMultipart()
     msg['From'] = email_from
     msg['To'] = ', '.join(email_recipients)
-    msg.set_content(message)
+    msg['Subject'] = subject
+
+    # Add body to email - ensure clean text
+    clean_message = message.strip()
+    msg.attach(MIMEText(clean_message, 'plain', 'utf-8'))
 
     # Attach files if provided
     if attachments:
@@ -39,26 +48,40 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
                 with open(file_path, 'rb') as f:
                     data = f.read()
                 filename = os.path.basename(file_path)
-                msg.add_attachment(data, maintype='application', subtype='octet-stream', filename=filename)
-                print(f'Attached file: {filename}')
+                
+                # Create attachment
+                part = MIMEBase('application', 'octet-stream')
+                part.set_payload(data)
+                encoders.encode_base64(part)
+                part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+                
+                msg.attach(part)
+                print(f'Attached file: {filename} ({len(data)} bytes)')
             except Exception as e:
                 print(f'Failed to attach {file_path}: {e}')
 
     try:
         context = ssl.create_default_context()
         
+        print(f'Connecting to {smtp_host}:{smtp_port}...')
+        
         # Use SSL for port 465, TLS for other ports
         if smtp_port == 465:
             print('Using SSL connection (port 465)')
             with smtplib.SMTP_SSL(smtp_host, smtp_port, context=context) as server:
+                print('Connected via SSL, attempting login...')
                 server.login(smtp_user, smtp_pass)
+                print('Login successful, sending email...')
                 server.send_message(msg)
                 print(f'✅ Email sent successfully to {len(email_recipients)} recipients: {", ".join(email_recipients)}')
         else:
             print('Using TLS connection (port 587)')
             with smtplib.SMTP(smtp_host, smtp_port) as server:
+                print('Connected, starting TLS...')
                 server.starttls(context=context)
+                print('TLS started, attempting login...')
                 server.login(smtp_user, smtp_pass)
+                print('Login successful, sending email...')
                 server.send_message(msg)
                 print(f'✅ Email sent successfully to {len(email_recipients)} recipients: {", ".join(email_recipients)}')
                 
@@ -70,8 +93,11 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
         print('3. The App Password is correct (16 characters, no spaces)')
     except smtplib.SMTPException as e:
         print(f'❌ SMTP Error: {e}')
+        print('This might be due to Gmail\'s strict formatting requirements.')
+        print('Try checking the email headers and content format.')
     except Exception as e:
         print(f'❌ Unexpected error: {e}')
+        print(f'Error type: {type(e).__name__}')
 
 
 def main():
