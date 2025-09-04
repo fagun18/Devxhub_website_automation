@@ -101,12 +101,12 @@ Add these secrets to your GitHub repository:
 
 1. Go to **Settings** → **Secrets and variables** → **Actions**
 2. Add the following repository secrets:
-   - `SMTP_HOST`: Your SMTP server (e.g., cp-ht-11.webhostbox.net)
-   - `SMTP_PORT`: SMTP port (e.g., 465 for SSL or 587 for TLS)
-   - `SMTP_USER`: Your email username
-   - `SMTP_PASS`: Your email password
-   - `EMAIL_FROM`: Sender email address
-   - `EMAIL_TO`: Recipient email addresses (comma-separated for multiple recipients)
+   - `SMTP_HOST`: `smtp.gmail.com`
+   - `SMTP_PORT`: `587`
+   - `SMTP_USER`: `fagun.devxhub@gmail.com`
+   - `SMTP_PASS`: `ibcs kfzt gpqd qwte` (Gmail App Password)
+   - `EMAIL_FROM`: `fagun.devxhub@gmail.com`
+   - `EMAIL_TO`: `hadis@devxhub.com,fagun115946@gmail.com`
 
 ## 📊 Test Data
 
