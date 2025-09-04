@@ -81,10 +81,10 @@ jobs:
         run: |
           set +e
           echo "Starting email notification..."
-          SUBJECT_OK="Devxhub contact automation: OK"
-          SUBJECT_BUG="BUG: Devxhub contact form not working"
-          BODY_OK="Automation ran successfully. See attached HTML report."
-          BODY_BUG="BUG detected in contact form submission. See attached HTML report and status.json."
+          SUBJECT_OK="Devxhub Automation TESTING Report by Testing Team"
+          SUBJECT_BUG="BUG: Devxhub Automation TESTING Report by Testing Team"
+          BODY_OK="Automation ran successfully. Detailed summary and enhanced report attached."
+          BODY_BUG="BUG detected in contact form submission. See detailed summary and enhanced report."
           STATUS_FILE="artifacts/status.json"
           SUBJECT="$SUBJECT_OK"
           BODY="$BODY_OK"
@@ -113,30 +113,22 @@ jobs:
           echo "Final Subject: $SUBJECT"
           echo "Final Body: $BODY"
           
-          # Check if files exist before attaching
+          # Prepare single attachment: enhanced-report.html
           ATTACH_ARGS=""
-          if [ -f "playwright-report.zip" ]; then
-            ATTACH_ARGS="$ATTACH_ARGS --attach playwright-report.zip"
-            echo "Will attach: playwright-report.zip"
-          fi
-          if [ -f "artifacts/status.json" ]; then
-            ATTACH_ARGS="$ATTACH_ARGS --attach artifacts/status.json"
-            echo "Will attach: artifacts/status.json"
+          if [ -f "playwright-report/enhanced-report.html" ]; then
+            ATTACH_ARGS="$ATTACH_ARGS --attach playwright-report/enhanced-report.html"
+            echo "Will attach: playwright-report/enhanced-report.html"
+          else
+            echo "enhanced-report.html not found; attempting to attach index.html"
+            if [ -f "playwright-report/index.html" ]; then
+              ATTACH_ARGS="$ATTACH_ARGS --attach playwright-report/index.html"
+              echo "Will attach: playwright-report/index.html"
+            fi
           fi
           
           echo "Running email command..."
-          # First try without attachments to test basic email functionality
-          python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" --no-attachments || true
-          echo "Email command (no attachments) completed with exit code: $?"
-          
-          # If that works, try with attachments
-          if [ $? -eq 0 ]; then
-            echo "Basic email worked, now trying with attachments..."
-            python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" $ATTACH_ARGS || true
-            echo "Email command (with attachments) completed with exit code: $?"
-          else
-            echo "Basic email failed, skipping attachment test"
-          fi
+          python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" $ATTACH_ARGS || true
+          echo "Email command completed with exit code: $?"
 
 
 

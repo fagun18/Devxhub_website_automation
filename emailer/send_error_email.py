@@ -66,7 +66,7 @@ def build_email_bodies(subject: str, message: str, status: dict) -> tuple[str, s
     result_text = 'SUCCESS' if ok else 'BUG'
 
     plain = (
-        f"Devxhub Contact Automation\n"
+        f"Devxhub Automation TESTING Report by Testing Team\n"
         f"Result: {result_text}\n"
         f"HTTP Status: {http_status}\n"
         f"Time: {now_iso}\n\n"
@@ -76,34 +76,34 @@ def build_email_bodies(subject: str, message: str, status: dict) -> tuple[str, s
 
     html = f"""
     <html>
-      <body style=\"font-family:Arial,Helvetica,sans-serif; background:#f8fafc; padding:16px;\">
-        <div style=\"max-width:720px; margin:auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden;\">
-          <div style=\"padding:16px 20px; background:#0f172a; color:#fff;\">
-            <h2 style=\"margin:0;\">Devxhub Contact Automation</h2>
-            <div style=\"opacity:0.85; font-size:13px;\">{subject}</div>
+      <body style=\"font-family:Inter,Arial,Helvetica,sans-serif; background:#0b1020; padding:20px;\">
+        <div style=\"max-width:820px; margin:auto; background:linear-gradient(180deg,#0f172a,#111827); border:1px solid #1f2937; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.35);\">
+          <div style=\"padding:18px 22px; background:linear-gradient(90deg,#0ea5e9,#8b5cf6); color:#fff;\">
+            <h2 style=\"margin:0; letter-spacing:0.2px;\">Devxhub Automation TESTING Report by Testing Team</h2>
+            <div style=\"opacity:0.9; font-size:13px;\">{subject}</div>
           </div>
-          <div style=\"padding:20px;\">
+          <div style=\"padding:22px; color:#e5e7eb;\">
             <div style=\"display:flex; gap:12px; margin-bottom:16px;\">
-              <div style=\"flex:1; background:#f1f5f9; padding:12px; border-radius:8px; text-align:center;\">
-                <div style=\"font-size:12px; color:#475569;\">Result</div>
-                <div style=\"font-weight:700; color:{'#16a34a' if ok else '#dc2626'};\">{result_text}</div>
+              <div style=\"flex:1; background:#111827; padding:14px; border-radius:10px; text-align:center; border:1px solid #374151;\">
+                <div style=\"font-size:12px; color:#9ca3af;\">Result</div>
+                <div style=\"font-weight:800; font-size:16px; color:{'#22c55e' if ok else '#f43f5e'};\">{result_text}</div>
               </div>
-              <div style=\"flex:1; background:#f1f5f9; padding:12px; border-radius:8px; text-align:center;\">
-                <div style=\"font-size:12px; color:#475569;\">HTTP Status</div>
-                <div style=\"font-weight:700;\">{http_status}</div>
+              <div style=\"flex:1; background:#111827; padding:14px; border-radius:10px; text-align:center; border:1px solid #374151;\">
+                <div style=\"font-size:12px; color:#9ca3af;\">HTTP Status</div>
+                <div style=\"font-weight:800; font-size:16px;\">{http_status}</div>
               </div>
-              <div style=\"flex:1; background:#f1f5f9; padding:12px; border-radius:8px; text-align:center;\">
-                <div style=\"font-size:12px; color:#475569;\">Time</div>
-                <div style=\"font-weight:700;\">{now_iso}</div>
+              <div style=\"flex:1; background:#111827; padding:14px; border-radius:10px; text-align:center; border:1px solid #374151;\">
+                <div style=\"font-size:12px; color:#9ca3af;\">Time</div>
+                <div style=\"font-weight:800; font-size:14px;\">{now_iso}</div>
               </div>
             </div>
 
-            <p style=\"margin:0 0 12px 0;\">{message}</p>
+            <p style=\"margin:0 0 14px 0; color:#d1d5db;\">{message}</p>
 
-            <h3 style=\"margin:20px 0 8px 0;\">API Response</h3>
-            <pre style=\"white-space:pre-wrap; background:#0b1020; color:#e2e8f0; padding:12px; border-radius:8px;\">{api_body}</pre>
+            <h3 style=\"margin:20px 0 10px 0; color:#a78bfa;\">API Response</h3>
+            <pre style=\"white-space:pre-wrap; background:#0b1020; color:#e2e8f0; padding:14px; border-radius:10px; border:1px solid #1f2937;\">{api_body}</pre>
 
-            <p style=\"margin-top:16px; font-size:13px; color:#475569;\">Attachments: HTML report zip and raw status.json.</p>
+            <p style=\"margin-top:16px; font-size:12px; color:#9ca3af;\">Attachment: enhanced-report.html</p>
           </div>
         </div>
       </body>
@@ -149,7 +149,7 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
     msg = MIMEMultipart('mixed')
 
     # Set headers with proper formatting (From must be the authenticated user)
-    msg['From'] = formataddr(('Devxhub Automation', email_from))
+    msg['From'] = formataddr(('Devxhub', email_from))
     msg['To'] = ', '.join(email_recipients)
     msg['Subject'] = subject
     msg['Date'] = formatdate(localtime=True)
