@@ -36,6 +36,9 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
+      - name: Install jq (for JSON parsing)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Run Playwright tests
         run: npm test
         continue-on-error: true
@@ -73,6 +76,7 @@ jobs:
       - name: Send email notification
         if: always()
         run: |
+          set +e
           echo "Starting email notification..."
           SUBJECT_OK="Devxhub contact automation: OK"
           SUBJECT_BUG="BUG: Devxhub contact form not working"
@@ -85,8 +89,14 @@ jobs:
           if [ -f "$STATUS_FILE" ]; then
             echo "Status file found, checking content..."
             cat "$STATUS_FILE"
-            STATUS_CODE=$(jq -r '.status // empty' "$STATUS_FILE" || echo "")
-            OK=$(jq -r '.ok // false' "$STATUS_FILE" || echo "false")
+            if command -v jq >/dev/null 2>&1; then
+              STATUS_CODE=$(jq -r '.status // empty' "$STATUS_FILE" || echo "")
+              OK=$(jq -r '.ok // false' "$STATUS_FILE" || echo "false")
+            else
+              echo "jq not found; defaulting OK=false"
+              STATUS_CODE=""
+              OK="false"
+            fi
             echo "Status Code: $STATUS_CODE"
             echo "OK Status: $OK"
             if [ "$OK" != "true" ]; then
@@ -112,8 +122,8 @@ jobs:
           fi
           
           echo "Running email command..."
-          python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" $ATTACH_ARGS
-          echo "Email command completed with exit code: $?"
+          python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" $ATTACH_ARGS || true
+          echo "Email command completed"
 
 
 
