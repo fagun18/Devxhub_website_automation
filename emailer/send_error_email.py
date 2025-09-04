@@ -8,6 +8,33 @@ from email.mime.base import MIMEBase
 from email import encoders
 from email.utils import formataddr, formatdate, make_msgid
 from typing import List
+import re
+
+
+def sanitize_and_validate_emails(raw_emails: str) -> List[str]:
+    candidates = []
+    for part in re.split(r'[;,]', raw_emails or ''):
+        addr = (part or '').strip()
+        if not addr:
+            continue
+        # Remove surrounding angle brackets and quotes
+        addr = addr.strip().strip('<>').strip().strip('"').strip("'")
+        # Collapse internal spaces
+        addr = re.sub(r"\s+", "", addr)
+        # Simple RFC5321-safe pattern
+        if re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', addr):
+            candidates.append(addr)
+        else:
+            print(f"Skipping invalid email address: {addr}")
+    # De-duplicate preserving order
+    seen = set()
+    valid = []
+    for a in candidates:
+        if a.lower() in seen:
+            continue
+        seen.add(a.lower())
+        valid.append(a)
+    return valid
 
 
 def send_email(subject: str, message: str, attachments: List[str] | None = None) -> None:
@@ -24,14 +51,19 @@ def send_email(subject: str, message: str, attachments: List[str] | None = None)
         print('SMTP credentials are not set; skipping email send.')
         return
 
-    # Parse multiple email addresses (comma-separated)
-    email_recipients = [email.strip() for email in email_to.split(',') if email.strip()]
+    # Sanitize and validate recipients
+    email_recipients = sanitize_and_validate_emails(email_to)
 
-    print(f'Attempting to send email to: {", ".join(email_recipients)}')
+    print(f"Raw EMAIL_TO: {email_to}")
+    print(f'Attempting to send email to: {", ".join(email_recipients) if email_recipients else "<none>"}')
     print(f'Using SMTP server: {smtp_host}:{smtp_port}')
     print(f'From: {email_from}')
     print(f'Subject: {subject}')
     print(f'Message length: {len(message)} characters')
+
+    if not email_recipients:
+        print('No valid recipient emails after validation; aborting send.')
+        return
 
     # Create message container with proper encoding
     msg = MIMEMultipart('mixed')
