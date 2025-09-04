@@ -123,7 +123,7 @@ The automation uses the following test data:
 
 The project includes an automated workflow (`.github/workflows/hourly.yml`) that:
 
-1. **Runs every 5 minutes** (`*/5 * * * *` cron schedule)
+1. **Runs every 8 hours** (`0 */8 * * *` cron schedule)
 2. **Installs dependencies** (Node.js, Python, Playwright)
 3. **Executes tests** with enhanced reporting
 4. **Generates HTML reports** and zips them

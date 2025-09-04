@@ -2,7 +2,7 @@ name: Devxhub Contact Automation
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 */8 * * *'
   workflow_dispatch:
 
 jobs:
@@ -58,9 +58,22 @@ jobs:
             artifacts/status.json
           if-no-files-found: ignore
 
+      - name: Debug email configuration
+        if: always()
+        run: |
+          echo "=== Email Configuration Debug ==="
+          echo "SMTP_HOST: $SMTP_HOST"
+          echo "SMTP_PORT: $SMTP_PORT"
+          echo "SMTP_USER: $SMTP_USER"
+          echo "EMAIL_FROM: $EMAIL_FROM"
+          echo "EMAIL_TO: $EMAIL_TO"
+          echo "SMTP_PASS: [HIDDEN]"
+          echo "================================"
+
       - name: Send email notification
         if: always()
         run: |
+          echo "Starting email notification..."
           SUBJECT_OK="Devxhub contact automation: OK"
           SUBJECT_BUG="BUG: Devxhub contact form not working"
           BODY_OK="Automation ran successfully. See attached HTML report."
@@ -68,15 +81,39 @@ jobs:
           STATUS_FILE="artifacts/status.json"
           SUBJECT="$SUBJECT_OK"
           BODY="$BODY_OK"
+          
           if [ -f "$STATUS_FILE" ]; then
+            echo "Status file found, checking content..."
+            cat "$STATUS_FILE"
             STATUS_CODE=$(jq -r '.status // empty' "$STATUS_FILE" || echo "")
             OK=$(jq -r '.ok // false' "$STATUS_FILE" || echo "false")
+            echo "Status Code: $STATUS_CODE"
+            echo "OK Status: $OK"
             if [ "$OK" != "true" ]; then
               SUBJECT="$SUBJECT_BUG (status ${STATUS_CODE})"
               BODY="$BODY_BUG"
             fi
+          else
+            echo "Status file not found, using default OK message"
           fi
-          python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" --attach playwright-report.zip --attach artifacts/status.json || true
+          
+          echo "Final Subject: $SUBJECT"
+          echo "Final Body: $BODY"
+          
+          # Check if files exist before attaching
+          ATTACH_ARGS=""
+          if [ -f "playwright-report.zip" ]; then
+            ATTACH_ARGS="$ATTACH_ARGS --attach playwright-report.zip"
+            echo "Will attach: playwright-report.zip"
+          fi
+          if [ -f "artifacts/status.json" ]; then
+            ATTACH_ARGS="$ATTACH_ARGS --attach artifacts/status.json"
+            echo "Will attach: artifacts/status.json"
+          fi
+          
+          echo "Running email command..."
+          python emailer/send_error_email.py --subject "$SUBJECT" --message "$BODY" $ATTACH_ARGS
+          echo "Email command completed with exit code: $?"
 
 
 
