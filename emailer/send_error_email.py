@@ -74,36 +74,38 @@ def build_email_bodies(subject: str, message: str, status: dict) -> tuple[str, s
         f"API Response Body:\n{api_body}\n"
     )
 
+    # Mobile-friendly, single title line, fluid layout, wrapped code block
     html = f"""
     <html>
-      <body style=\"font-family:Inter,Arial,Helvetica,sans-serif; background:#0b1020; padding:20px;\">
-        <div style=\"max-width:820px; margin:auto; background:linear-gradient(180deg,#0f172a,#111827); border:1px solid #1f2937; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.35);\">
-          <div style=\"padding:18px 22px; background:linear-gradient(90deg,#0ea5e9,#8b5cf6); color:#fff;\">
-            <h2 style=\"margin:0; letter-spacing:0.2px;\">Devxhub Automation TESTING Report by Testing Team</h2>
-            <div style=\"opacity:0.9; font-size:13px;\">{subject}</div>
-          </div>
-          <div style=\"padding:22px; color:#e5e7eb;\">
-            <div style=\"display:flex; gap:12px; margin-bottom:16px;\">
-              <div style=\"flex:1; background:#111827; padding:14px; border-radius:10px; text-align:center; border:1px solid #374151;\">
-                <div style=\"font-size:12px; color:#9ca3af;\">Result</div>
-                <div style=\"font-weight:800; font-size:16px; color:{'#22c55e' if ok else '#f43f5e'};\">{result_text}</div>
-              </div>
-              <div style=\"flex:1; background:#111827; padding:14px; border-radius:10px; text-align:center; border:1px solid #374151;\">
-                <div style=\"font-size:12px; color:#9ca3af;\">HTTP Status</div>
-                <div style=\"font-weight:800; font-size:16px;\">{http_status}</div>
-              </div>
-              <div style=\"flex:1; background:#111827; padding:14px; border-radius:10px; text-align:center; border:1px solid #374151;\">
-                <div style=\"font-size:12px; color:#9ca3af;\">Time</div>
-                <div style=\"font-weight:800; font-size:14px;\">{now_iso}</div>
-              </div>
+      <body style=\"margin:0; padding:0; background:#0b1020;\">
+        <div style=\"box-sizing:border-box; width:100%; padding:12px;\">
+          <div style=\"max-width:680px; margin:0 auto; background:linear-gradient(180deg,#0f172a,#111827); border:1px solid #1f2937; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.35);\">
+            <div style=\"padding:16px; background:linear-gradient(90deg,#0ea5e9,#8b5cf6); color:#fff;\">
+              <h2 style=\"margin:0; font-family:Inter,Arial,Helvetica,sans-serif; font-size:18px; line-height:1.4; letter-spacing:0.2px;\">Devxhub Automation TESTING Report by Testing Team</h2>
             </div>
+            <div style=\"padding:16px; color:#e5e7eb; font-family:Inter,Arial,Helvetica,sans-serif;\">
+              <div style=\"display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;\">
+                <div style=\"flex:1 1 140px; min-width:140px; background:#111827; padding:12px; border-radius:10px; text-align:center; border:1px solid #374151;\">
+                  <div style=\"font-size:12px; color:#9ca3af;\">Result</div>
+                  <div style=\"font-weight:800; font-size:16px; color:{'#22c55e' if ok else '#f43f5e'};\">{result_text}</div>
+                </div>
+                <div style=\"flex:1 1 140px; min-width:140px; background:#111827; padding:12px; border-radius:10px; text-align:center; border:1px solid #374151;\">
+                  <div style=\"font-size:12px; color:#9ca3af;\">HTTP Status</div>
+                  <div style=\"font-weight:800; font-size:16px;\">{http_status}</div>
+                </div>
+                <div style=\"flex:1 1 140px; min-width:140px; background:#111827; padding:12px; border-radius:10px; text-align:center; border:1px solid #374151;\">
+                  <div style=\"font-size:12px; color:#9ca3af;\">Time</div>
+                  <div style=\"font-weight:800; font-size:12px; word-break:break-word;\">{now_iso}</div>
+                </div>
+              </div>
 
-            <p style=\"margin:0 0 14px 0; color:#d1d5db;\">{message}</p>
+              <p style=\"margin:0 0 12px 0; color:#d1d5db; font-size:14px; line-height:1.5;\">{message}</p>
 
-            <h3 style=\"margin:20px 0 10px 0; color:#a78bfa;\">API Response</h3>
-            <pre style=\"white-space:pre-wrap; background:#0b1020; color:#e2e8f0; padding:14px; border-radius:10px; border:1px solid #1f2937;\">{api_body}</pre>
+              <h3 style=\"margin:16px 0 8px 0; color:#a78bfa; font-size:14px;\">API Response</h3>
+              <div style=\"background:#0b1020; color:#e2e8f0; padding:12px; border-radius:10px; border:1px solid #1f2937; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:12px; line-height:1.5; white-space:pre-wrap; word-break:break-word; overflow:auto; max-width:100%;\">{api_body}</div>
 
-            <p style=\"margin-top:16px; font-size:12px; color:#9ca3af;\">Attachment: enhanced-report.html</p>
+              <p style=\"margin-top:14px; font-size:12px; color:#9ca3af;\">Attachment: enhanced-report.html</p>
+            </div>
           </div>
         </div>
       </body>
