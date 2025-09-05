@@ -96,16 +96,25 @@ jobs:
             if command -v jq >/dev/null 2>&1; then
               STATUS_CODE=$(jq -r '.status // empty' "$STATUS_FILE" || echo "")
               OK=$(jq -r '.ok // false' "$STATUS_FILE" || echo "false")
+              SUCCESS=$(jq -r '.success // empty' "$STATUS_FILE" || echo "")
+              MESSAGE=$(jq -r '.message // empty' "$STATUS_FILE" || echo "")
             else
               echo "jq not found; defaulting OK=false"
               STATUS_CODE=""
               OK="false"
+              SUCCESS=""
+              MESSAGE=""
             fi
             echo "Status Code: $STATUS_CODE"
             echo "OK Status: $OK"
+            echo "Success: $SUCCESS"
+            echo "Message: $MESSAGE"
+            BODY_DETAILS="Status: $STATUS_CODE\nSuccess: ${SUCCESS:-$OK}\nMessage: ${MESSAGE:-N/A}"
             if [ "$OK" != "true" ]; then
               SUBJECT="$SUBJECT_BUG (status ${STATUS_CODE})"
-              BODY="$BODY_BUG"
+              BODY="$BODY_BUG\n\n$BODY_DETAILS"
+            else
+              BODY="$BODY_OK\n\n$BODY_DETAILS"
             fi
           else
             echo "Status file not found, using default OK message"

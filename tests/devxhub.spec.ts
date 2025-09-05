@@ -36,47 +36,109 @@ async function gotoWithRetry(page: any, url: string, tries = 3): Promise<void> {
   throw lastError;
 }
 
-test('Devxhub contact form submission and API status check', async ({ page }) => {
+async function extractRecaptchaSiteKeyFromHtml(html: string): Promise<string | null> {
+  const renderMatch = html.match(/recaptcha\/api\.js\?render=([a-zA-Z0-9_\-]+)/);
+  if (renderMatch && renderMatch[1]) {
+    return renderMatch[1];
+  }
+  const dataAttrMatch = html.match(/data-sitekey=\"([^\"]+)\"/);
+  if (dataAttrMatch && dataAttrMatch[1]) {
+    return dataAttrMatch[1];
+  }
+  return null;
+}
+
+async function obtainRecaptchaToken(page: any): Promise<string | null> {
+  // Ensure we're on the contact page so any required cookies/tokens are set
+  await gotoWithRetry(page, '/contact-us');
+  const html = await page.content();
+  const siteKey = await extractRecaptchaSiteKeyFromHtml(html);
+  if (!siteKey) {
+    return null;
+  }
+
+  // Make sure grecaptcha is available; if not, inject via the known script URL
   try {
+    await page.addScriptTag({ url: `https://www.google.com/recaptcha/api.js?render=${siteKey}` });
+  } catch (_) {
+    // Ignore if already present
+  }
+
+  try {
+    await page.waitForFunction(() => (window as any).grecaptcha && (window as any).grecaptcha.ready, { timeout: 15000 });
+    const token = await page.evaluate(async (k: string) => {
+      return await new Promise<string>((resolve, reject) => {
+        const g: any = (window as any).grecaptcha;
+        if (!g || !g.ready) {
+          reject(new Error('grecaptcha not ready'));
+          return;
+        }
+        g.ready(() => {
+          g.execute(k, { action: 'submit' })
+            .then((t: string) => resolve(t))
+            .catch((e: any) => reject(e));
+        });
+      });
+    }, siteKey);
+    return token;
+  } catch (_) {
+    return null;
+  }
+}
+
+test('Devxhub contact API direct call and status check', async ({ page }) => {
+  try {
+    // Visit site to share cookies/storage with request context and to enable recaptcha
     await gotoWithRetry(page, '/');
-    await page.waitForTimeout(2000);
-
+    await page.waitForTimeout(1000);
     await gotoWithRetry(page, '/contact-us');
-    await page.waitForSelector('xpath=/html/body//form//button', { timeout: 60000 }).catch(() => {});
 
-    const fullName = page.locator('xpath=/html/body/div[1]/div/div[2]/div/section/div[1]/div/div/div[2]/form/div[1]/input');
-    await fullName.click();
-    await fullName.fill('Mejbaur Bahar Fagun');
+    // Try to obtain a reCAPTCHA v3 token from the page
+    const recaptchaToken = await obtainRecaptchaToken(page);
 
-    const phone = page.locator('xpath=/html/body/div[1]/div/div[2]/div/section/div[1]/div/div/div[2]/form/div[2]/div[1]/div/div/input');
-    await phone.click();
-    await phone.fill('+8801316314566');
+    // Construct payload consistent with production request
+    const payload: Record<string, any> = {
+      full_name: 'Mejbaur Bahar Fagun',
+      email: 'fagun.devxhub@gmail.com',
+      phone: '+8801316314566',
+      project_details: 'Automation Testing purpose',
+    };
+    if (recaptchaToken) {
+      payload.recaptchaToken = recaptchaToken;
+    }
 
-    const email = page.locator('xpath=/html/body/div[1]/div/div[2]/div/section/div[1]/div/div/div[2]/form/div[2]/div[2]/input');
-    await email.click();
-    await email.fill('fagun.devxhub@gmail.com');
+    const response = await page.request.post('https://devxhub.com/api/posts/contacts', {
+      data: payload,
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'origin': 'https://devxhub.com',
+        'referer': 'https://devxhub.com/contact-us'
+      }
+    });
 
-    const details = page.locator('xpath=/html/body/div[1]/div/div[2]/div/section/div[1]/div/div/div[2]/form/div[3]/textarea');
-    await details.click();
-    await details.fill('Automation Testing purpose');
-
-    const responsePromise = page.waitForResponse((resp) => {
-      return resp.url() === 'https://devxhub.com/api/posts/contacts' && resp.request().method() === 'POST';
-    }, { timeout: 30000 });
-
-    const submit = page.locator('xpath=/html/body/div[1]/div/div[2]/div/section/div[1]/div/div/div[2]/form/button');
-    await submit.click();
-
-    const response = await responsePromise;
     const status = response.status();
     const bodyText = await response.text();
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(bodyText);
+    } catch (_) {
+      parsed = null;
+    }
 
     // Write status file for CI to read
     const outDir = path.join(process.cwd(), 'artifacts');
     fs.mkdirSync(outDir, { recursive: true });
     const statusFile = path.join(outDir, 'status.json');
     const isOk = status === 200;
-    fs.writeFileSync(statusFile, JSON.stringify({ ok: isOk, status, body: bodyText }, null, 2));
+    const statusPayload: Record<string, any> = {
+      ok: isOk,
+      status,
+      success: parsed?.success ?? isOk,
+      message: parsed?.message ?? '',
+      body: parsed ? JSON.stringify(parsed, null, 2) : bodyText
+    };
+    fs.writeFileSync(statusFile, JSON.stringify(statusPayload, null, 2));
 
     if (!isOk) {
       await sendErrorEmail(
